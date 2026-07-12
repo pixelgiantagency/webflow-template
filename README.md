@@ -12,11 +12,10 @@ Ausgangspunkt für neue Webflow-Kundenprojekte: TypeScript + esbuild + GitHub Ac
 4. `src/main.ts` und `src/global.ts` als Ausgangspunkt nutzen, projektspezifische Components in `src/components/` ergänzen
 5. Nicht benötigte Typ-Dateien in `src/types/` löschen bzw. neue ergänzen (siehe unten)
 6. `package.json`: `name` auf den neuen Projektnamen anpassen
-7. Lokales HTTPS-Zertifikat referenzieren (siehe `docs/machine-setup.md` für die einmalige Erstellung, hier nur die `.vscode/settings.json` pro Projekt anlegen, siehe unten)
-8. Head-Snippet mit den korrekten Repo-Pfaden in Webflow einfügen (siehe unten)
-9. `.github/workflows/build.yml` braucht **keine** Anpassung – nutzt automatisch den richtigen Repo-Namen über GitHub-Kontextvariablen
-10. In den Repo-Settings (**und** ggf. Organisations-Settings, siehe machine-setup) unter Actions → General → "Read and write permissions" aktivieren
-11. **Ersten Test machen** (siehe Checkliste ganz unten), bevor du mit dem eigentlichen Projekt loslegst
+7. Head-Snippet mit den korrekten Repo-Pfaden in Webflow einfügen (siehe unten)
+8. `.github/workflows/build.yml` braucht **keine** Anpassung – nutzt automatisch den richtigen Repo-Namen über GitHub-Kontextvariablen
+9. In den Repo-Settings (**und** ggf. Organisations-Settings, siehe machine-setup) unter Actions → General → "Read and write permissions" aktivieren
+10. **Ersten Test machen** (siehe Checkliste ganz unten), bevor du mit dem eigentlichen Projekt loslegst
 
 ---
 
@@ -83,35 +82,25 @@ Alle GSAP-Plugins sind seit 2025 kostenlos nutzbar. Vollständige, aktuelle List
 
 ```
 node_modules/
-.vscode-certs/
-.vscode/
 ```
 
 **Bewusst NICHT drin: `dist/`.** Das widerspricht der üblichen Regel ("Build-Output nicht committen"), ist hier aber notwendig: jsDelivr liefert bei `gh/`-URLs die Rohdatei direkt aus dem Repository aus – es gibt keinen Server, der zur Laufzeit baut. `dist/bundle.js` muss also zwingend im Repo liegen. Gepflegt wird sie trotzdem nicht manuell, sondern automatisch von der GitHub Action bei jedem Push (siehe "Deployment" unten).
 
 ---
 
-## Lokale Entwicklung einrichten (pro Projekt)
-```json
-{
-  "liveServer.settings.https": {
-    "enable": true,
-    "cert": "C:\\Users\\<Name>\\.certs\\localhost\\localhost+1.pem",
-    "key": "C:\\Users\\<Name>\\.certs\\localhost\\localhost+1-key.pem",
-    "passphrase": ""
-  }
-}
-```
+## Lokale Entwicklung (pro Projekt)
 
-Da das Zertifikat zentral liegt, muss `mkcert localhost 127.0.0.1` **nicht** pro Projekt wiederholt werden – nur dieser eine `settings.json`-Block pro neuem Projekt.
-
-### Entwickeln
+Kein Zertifikat, keine HTTPS-Konfiguration nötig – der lokale Dev-Server läuft über reines HTTP. Grund: `localhost`/`127.0.0.1` gelten browserseitig als sichere Ursprünge, auch wenn sie von einer HTTPS-Seite aus geladen werden (funktioniert identisch auf Windows und Mac, ohne Zertifikat-Verwaltung).
 
 ```powershell
-npm run watch
+npm run dev
 ```
 
-Rechtsklick auf eine Datei im Explorer → **"Open with Live Server"**.
+Startet einen lokalen Server unter `http://localhost:3000`, der bei jeder Anfrage automatisch neu baut. Läuft im Terminal weiter, einfach offen lassen.
+
+**Kurzer Funktionstest:** `http://localhost:3000/bundle.js` direkt im Browser öffnen – sollte den kompilierten Code zeigen, ohne Warnung.
+
+**Ablauf beim Entwickeln:** Code ändern → `Strg+S` (speichern) → im Browser-Tab mit der Test-/Staging-Seite manuell **F5** drücken (kein automatisches Reload der Webflow-Seite, da diese ja nicht vom lokalen Server selbst ausgeliefert wird, sondern den Code nur per Script-Tag nachlädt).
 
 ---
 
@@ -121,7 +110,7 @@ In Project Settings → Custom Code (Head), mit den echten Werten des jeweiligen
 
 ```javascript
 (function () {
-  const LOCAL_SCRIPT = 'https://127.0.0.1:5500/dist/bundle.js';
+  const LOCAL_SCRIPT = 'http://localhost:3000/bundle.js';
   const STAGING_SCRIPT = 'https://cdn.jsdelivr.net/gh/<ORG>/<REPO>@main/dist/bundle.js';
   const PROD_SCRIPT = 'https://cdn.jsdelivr.net/gh/<ORG>/<REPO>@<VERSION>/dist/bundle.js';
 
@@ -145,7 +134,7 @@ In Project Settings → Custom Code (Head), mit den echten Werten des jeweiligen
 
 `<ORG>/<REPO>` durch die echten Werte ersetzen (z.B. `pixelgiantagency/supplyhero`).
 
-**Hinweis:** `localStorage` ist pro Browser getrennt gespeichert. Nach dem Testen mit `?dev=true` in einem Browser nicht vergessen, `?dev=false` aufzurufen, bevor man in einem anderen Browser testet – sonst versucht dieser weiterhin `127.0.0.1` zu laden, auch wenn Live Server dort gar nicht läuft.
+**Hinweis:** `localStorage` ist pro Browser getrennt gespeichert. Nach dem Testen mit `?dev=true` in einem Browser nicht vergessen, `?dev=false` aufzurufen, bevor man in einem anderen Browser testet – sonst versucht dieser weiterhin `localhost:3000` zu laden, auch wenn der lokale Server dort gar nicht läuft (Fehler: `ERR_CONNECTION_REFUSED`).
 
 ---
 
@@ -171,10 +160,6 @@ git push origin v1.0.0
 ```
 Danach `PROD_SCRIPT` im Webflow Head-Code auf die neue Version anpassen und publishen. Rollback: `PROD_SCRIPT` einfach auf eine vorherige Versionsnummer zurücksetzen.
 
-### Browser-Stolperstein: Local Network Access
-
-Chrome/Brave blockieren standardmäßig, dass eine öffentliche HTTPS-Seite eine lokale Adresse (`127.0.0.1`) anspricht. Falls `bundle.js` im Network-Tab dauerhaft "pending" bleibt: Site-Settings der Staging-Domain → "Local Network Access" → Zulassen. Alternativ in einem separaten Dev-Browserprofil die Flag global deaktivieren (`chrome://flags` bzw. `brave://flags` → `local-network-access-check` → Disabled).
-
 ---
 
 ## Checkliste: Erster Test nach dem Einrichten eines neuen Projekts
@@ -184,7 +169,7 @@ Der Reihe nach abhaken, bevor mit dem eigentlichen Projekt losgelegt wird – je
 1. `npm run check` → keine Ausgabe/Fehler
 2. `npm run lint` → `0 problems`
 3. `npm run build` → `dist/bundle.js` wird erzeugt
-4. Live Server starten, `https://127.0.0.1:5500/dist/bundle.js` direkt im Browser öffnen → lädt ohne Warnung
+4. `npm run dev` starten, `http://localhost:3000/bundle.js` direkt im Browser öffnen → lädt ohne Warnung
 5. Ersten Commit + Push machen
 6. GitHub → Tab "Actions" → Workflow-Lauf wird grün (alle Schritte inkl. `check`/`lint`/`build`/Commit/Purge)
 7. GitHub → Tab "Code" → automatischer Commit "chore: rebuild dist [skip ci]" ist sichtbar
