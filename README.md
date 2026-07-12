@@ -1,4 +1,4 @@
-# PixelGiant Webflow Template
+# Pixelgiant Webflow Template
 
 Ausgangspunkt für neue Webflow-Kundenprojekte: TypeScript + esbuild + GitHub Actions + jsDelivr. Ersetzt die Notwendigkeit für Drittanbieter-Hosting von Custom Code.
 
