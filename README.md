@@ -121,7 +121,13 @@ In Project Settings → Custom Code (Head), mit den echten Werten des jeweiligen
 
   let finalScriptUrl = PROD_SCRIPT;
   if (isStaging) {
-    finalScriptUrl = isLocalDev ? LOCAL_SCRIPT : STAGING_SCRIPT + '?v=' + Date.now();
+    if (isLocalDev) {
+      finalScriptUrl = LOCAL_SCRIPT;
+      console.log('🟡 Lade lokalen Code (localhost:3000)');
+    } else {
+      finalScriptUrl = STAGING_SCRIPT + '?v=' + Date.now();
+      console.log('🔵 Lade Staging Code (GitHub Main)');
+    }
   }
 
   const scriptTag = document.createElement('script');
