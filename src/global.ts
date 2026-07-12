@@ -1,0 +1,41 @@
+let smoother: ScrollSmoother | undefined;
+
+export function initGsapCore(): void {
+  gsap.registerPlugin(ScrollTrigger, ScrollSmoother, SplitText);
+  ScrollTrigger.config({ ignoreMobileResize: true });
+
+  smoother = ScrollSmoother.create({
+    wrapper: ".page-wrapper",
+    content: ".main-wrapper",
+    smooth: 0.8,
+    effects: true,
+    smoothTouch: false,
+  });
+}
+
+export function getSmoother(): ScrollSmoother | undefined {
+  return smoother;
+}
+
+export function initScrollRefreshFixes(): void {
+  window.addEventListener("load", () => {
+    setTimeout(() => {
+      ScrollTrigger.refresh();
+    }, 100);
+  });
+
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(() => {
+      ScrollTrigger.refresh();
+    });
+  }
+
+  // Falls das Projekt Finsweet Attributes (List/CMS Load) nutzt:
+  window.fsAttributes = window.fsAttributes || [];
+  window.fsAttributes.push([
+    "list",
+    () => {
+      ScrollTrigger.refresh();
+    },
+  ]);
+}
