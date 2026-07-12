@@ -1,3 +1,5 @@
+// src/global.ts
+
 let smoother: ScrollSmoother | undefined;
 
 export function initGsapCore(): void {
@@ -29,13 +31,4 @@ export function initScrollRefreshFixes(): void {
       ScrollTrigger.refresh();
     });
   }
-
-  // Falls das Projekt Finsweet Attributes (List/CMS Load) nutzt:
-  window.fsAttributes = window.fsAttributes || [];
-  window.fsAttributes.push([
-    "list",
-    () => {
-      ScrollTrigger.refresh();
-    },
-  ]);
 }
