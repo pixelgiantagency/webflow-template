@@ -7,8 +7,8 @@ export function initGsapCore(): void {
   ScrollTrigger.config({ ignoreMobileResize: true });
 
   smoother = ScrollSmoother.create({
-    wrapper: ".page-wrapper",
-    content: ".main-wrapper",
+    wrapper: '.page-wrapper',
+    content: '.main-wrapper',
     smooth: 0.8,
     effects: true,
     smoothTouch: false,
@@ -20,7 +20,7 @@ export function getSmoother(): ScrollSmoother | undefined {
 }
 
 export function initScrollRefreshFixes(): void {
-  window.addEventListener("load", () => {
+  window.addEventListener('load', () => {
     setTimeout(() => {
       ScrollTrigger.refresh();
     }, 100);
@@ -31,4 +31,8 @@ export function initScrollRefreshFixes(): void {
       ScrollTrigger.refresh();
     });
   }
+}
+
+export function revealAfterSetup(): void {
+  document.body.classList.add('js-ready');
 }

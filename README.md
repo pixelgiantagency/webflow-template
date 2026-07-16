@@ -58,19 +58,19 @@ export {};
 
 ### Referenz: gängige GSAP-Plugins
 
-| Plugin | npm-Importpfad | Typischer Einsatz |
-|---|---|---|
-| ScrollTrigger | `gsap/ScrollTrigger` | Scroll-gesteuerte Animationen |
-| ScrollSmoother | `gsap/ScrollSmoother` | Smooth Scrolling |
-| SplitText | `gsap/SplitText` | Text-Reveal-Animationen |
-| Observer | `gsap/Observer` | Scroll-/Wheel-/Touch-Gesten (z.B. Slideshows) |
-| CustomEase | `gsap/CustomEase` | Individuelle Easing-Kurven |
-| Draggable | `gsap/Draggable` | Drag-Interaktionen |
-| Flip | `gsap/Flip` | Layout-Übergangs-Animationen |
-| MotionPathPlugin | `gsap/MotionPathPlugin` | Bewegung entlang eines Pfads |
-| TextPlugin | `gsap/TextPlugin` | Text-Tippeffekte |
-| DrawSVGPlugin | `gsap/DrawSVGPlugin` | SVG-Linien zeichnen |
-| MorphSVGPlugin | `gsap/MorphSVGPlugin` | SVG-Form-Morphing |
+| Plugin           | npm-Importpfad          | Typischer Einsatz                             |
+| ---------------- | ----------------------- | --------------------------------------------- |
+| ScrollTrigger    | `gsap/ScrollTrigger`    | Scroll-gesteuerte Animationen                 |
+| ScrollSmoother   | `gsap/ScrollSmoother`   | Smooth Scrolling                              |
+| SplitText        | `gsap/SplitText`        | Text-Reveal-Animationen                       |
+| Observer         | `gsap/Observer`         | Scroll-/Wheel-/Touch-Gesten (z.B. Slideshows) |
+| CustomEase       | `gsap/CustomEase`       | Individuelle Easing-Kurven                    |
+| Draggable        | `gsap/Draggable`        | Drag-Interaktionen                            |
+| Flip             | `gsap/Flip`             | Layout-Übergangs-Animationen                  |
+| MotionPathPlugin | `gsap/MotionPathPlugin` | Bewegung entlang eines Pfads                  |
+| TextPlugin       | `gsap/TextPlugin`       | Text-Tippeffekte                              |
+| DrawSVGPlugin    | `gsap/DrawSVGPlugin`    | SVG-Linien zeichnen                           |
+| MorphSVGPlugin   | `gsap/MorphSVGPlugin`   | SVG-Form-Morphing                             |
 
 Alle GSAP-Plugins sind seit 2025 kostenlos nutzbar. Vollständige, aktuelle Liste: [gsap.com/docs/v3/Plugins](https://gsap.com/docs/v3/Plugins/)
 
@@ -160,11 +160,53 @@ npm run format      # Prettier
 **Staging:** automatisch bei jedem Push zu `main` (GitHub Action baut, committet `dist/bundle.js`, purged jsDelivr-Cache).
 
 **Produktion:** bewusster, manueller Schritt:
+
 ```powershell
 git tag v1.0.0
 git push origin v1.0.0
 ```
+
 Danach `PROD_SCRIPT` im Webflow Head-Code auf die neue Version anpassen und publishen. Rollback: `PROD_SCRIPT` einfach auf eine vorherige Versionsnummer zurücksetzen.
+
+---
+
+## FOUC-Schutz (Flash of Unstyled/Unanimated Content)
+
+Elemente, die per GSAP beim Laden animiert werden (Hero, Navbar etc.), sind ohne Schutz kurz normal sichtbar, bevor GSAP sie versteckt und einanimiert – sichtbar als kurzer Blitzer. Fix, verteilt über zwei Stellen:
+
+**1. CSS im Webflow Head-Code** (diese eine Zeile ist projektübergreifend fertig, ändert sich nie):
+
+```html
+<style>
+  body:not(.js-ready) [data-fouc-hide] {
+    opacity: 0;
+  }
+</style>
+<script>
+  // Fallback: falls bundle.js aus irgendeinem Grund nicht lädt, nach 3s trotzdem freigeben
+  setTimeout(function () {
+    document.body.classList.add('js-ready');
+  }, 3000);
+</script>
+```
+
+**2. In Webflow:** Jedem Element, das beim Laden per GSAP animiert wird (Hero-Heading, Navbar, etc.), zusätzlich das Custom Attribute `data-fouc-hide` geben – kein Code-Editieren nötig, direkt im Designer erledigt.
+
+**3. `revealAfterSetup()`** (bereits in `global.ts`, wird in `main.ts` als letzter Aufruf in `init()` ausgeführt) setzt `js-ready`, sobald alle Animationen ihre Startzustände gesetzt haben.
+
+**⚠️ Kritisch: Niemals `!important` in der CSS-Regel verwenden.** GSAP setzt Animationswerte als Inline-Styles ohne `!important` – ein `!important` in der externen Regel würde die Animation dauerhaft unsichtbar "einfrieren", auch nach `js-ready`. Ohne `!important` gewinnen GSAPs Inline-Styles automatisch, sobald sie zu animieren beginnen.
+
+---
+
+## Bekannte Stolpersteine
+
+**jsDelivr Purge-Throttling.** Der Purge-Endpoint (`purge.jsdelivr.net`) lässt sich für denselben Pfad nur begrenzt oft hintereinander aufrufen – bei zu häufigem Aufruf wird der Request stillschweigend **throttled** (nicht ausgeführt), obwohl die Antwort wie ein Erfolg aussieht. JSON-Response immer prüfen:
+
+```json
+{ "paths": { "/gh/.../bundle.js": { "throttled": true, "throttlingReset": 959 } } }
+```
+
+`throttled: true` = ignoriert, `throttlingReset` = Sekunden bis zum nächsten möglichen Versuch. Falls throttled: einfach warten oder gar nichts tun – der Cache läuft nach spätestens 12 Stunden (`s-maxage=43200`) ohnehin von selbst ab, auch ganz ohne Purge.
 
 ---
 

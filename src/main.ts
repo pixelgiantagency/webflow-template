@@ -1,5 +1,5 @@
-import { initGsapCore, initScrollRefreshFixes } from "./global";
-import { initExample } from "./components/example";
+import { initGsapCore, revealAfterSetup, initScrollRefreshFixes } from './global';
+import { initExample } from './components/example';
 
 function init(): void {
   initGsapCore();
@@ -8,10 +8,12 @@ function init(): void {
   // Neue Components hier importieren & aufrufen
 
   initScrollRefreshFixes();
+
+  revealAfterSetup(); // Immer als letzter Aufruf in init()
 }
 
-if (document.readyState === "loading") {
-  window.addEventListener("DOMContentLoaded", init);
+if (document.readyState === 'loading') {
+  window.addEventListener('DOMContentLoaded', init);
 } else {
   init();
 }
