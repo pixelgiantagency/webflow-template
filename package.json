@@ -4,8 +4,8 @@
   "description": "PixelGiant Webflow custom-code template (TypeScript + esbuild + GitHub Actions + jsDelivr)",
   "license": "UNLICENSED",
   "scripts": {
-    "build": "esbuild src/main.ts --bundle --minify --outfile=dist/bundle.js",
-    "dev": "esbuild src/main.ts --bundle --outfile=dist/bundle.js --servedir=dist --serve=3000",
+    "build": "esbuild src/main.ts src/main.css --bundle --minify --outdir=dist --entry-names=bundle",
+    "dev": "esbuild src/main.ts src/main.css --bundle --outdir=dist --entry-names=bundle --servedir=dist --serve=3000",
     "check": "tsc --noEmit",
     "lint": "eslint src/**/*.ts",
     "format": "prettier --write src/**/*.ts"
